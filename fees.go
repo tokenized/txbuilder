@@ -7,7 +7,7 @@ import (
 	"github.com/tokenized/channels"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"
-	"github.com/tokenized/txbuilder/unlocking_size"
+	"github.com/tokenized/txbuilder/unlocking_data"
 
 	"github.com/pkg/errors"
 )
@@ -176,14 +176,14 @@ func (tx *TxBuilder) EstimatedSize() int {
 		if len(input.LockingScript) == 0 {
 			txin := tx.MsgTx.TxIn[i]
 			if txin.UnlockingScript.IsFalseOpReturn() {
-				protocols := channels.NewProtocols(unlocking_size.NewProtocol())
+				protocols := channels.NewProtocols(unlocking_data.NewProtocol())
 				msg, _, err := protocols.Parse(txin.UnlockingScript)
 				if err == nil {
-					unlockSize, ok := msg.(*unlocking_size.UnlockingSize)
+					unlockData, ok := msg.(*unlocking_data.UnlockingData)
 					if ok {
 						result += InputBaseSize + // outpoint + sequence
-							VarIntSerializeSize(unlockSize.UnlockingSize) +
-							int(unlockSize.UnlockingSize)
+							VarIntSerializeSize(unlockData.Size) +
+							int(unlockData.Size)
 						continue
 					}
 				}
@@ -217,9 +217,25 @@ func (tx *TxBuilder) CalculateFee() error {
 // InputValue returns the sum of the values of the inputs.
 func (tx *TxBuilder) InputValue() uint64 {
 	inputValue := uint64(0)
-	for _, input := range tx.Inputs {
+	for i, input := range tx.Inputs {
+		if input.Value == 0 {
+			txin := tx.MsgTx.TxIn[i]
+			if txin.UnlockingScript.IsFalseOpReturn() {
+				protocols := channels.NewProtocols(unlocking_data.NewProtocol())
+				msg, _, err := protocols.Parse(txin.UnlockingScript)
+				if err == nil {
+					unlockData, ok := msg.(*unlocking_data.UnlockingData)
+					if ok {
+						inputValue += unlockData.Value
+						continue
+					}
+				}
+			}
+		}
+
 		inputValue += input.Value
 	}
+
 	return inputValue
 }
 

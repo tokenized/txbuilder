@@ -1,4 +1,4 @@
-package unlocking_size
+package unlocking_data
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ProtocolID = envelope.ProtocolID("UL_S") // Protocol ID for unlocking size messages
+	ProtocolID = envelope.ProtocolID("UL") // Protocol ID for unlocking data messages
 	Version    = uint8(0)
 
 	ErrUnsupportedVersion = errors.New("Unsupported Operator Version")
@@ -36,20 +36,22 @@ func (*Protocol) ResponseCodeToString(code uint32) string {
 	return "parse_error"
 }
 
-type UnlockingSize struct {
-	UnlockingSize uint64
+type UnlockingData struct {
+	Size  uint64
+	Value uint64
 }
 
-func (*UnlockingSize) ProtocolID() envelope.ProtocolID {
+func (*UnlockingData) ProtocolID() envelope.ProtocolID {
 	return ProtocolID
 }
 
-func (m *UnlockingSize) Write() (envelope.Data, error) {
+func (m *UnlockingData) Write() (envelope.Data, error) {
 	// Version
 	payload := bitcoin.ScriptItems{bitcoin.PushNumberScriptItem(int64(Version))}
 
 	// Message
-	payload = append(payload, bitcoin.PushNumberScriptItemUnsigned(m.UnlockingSize))
+	payload = append(payload, bitcoin.PushNumberScriptItemUnsigned(m.Size))
+	payload = append(payload, bitcoin.PushNumberScriptItemUnsigned(m.Value))
 
 	return envelope.Data{envelope.ProtocolIDs{ProtocolID}, payload}, nil
 }
@@ -64,8 +66,8 @@ func Parse(payload envelope.Data) (channels.Message, envelope.Data, error) {
 	}
 	payload.ProtocolIDs = payload.ProtocolIDs[1:]
 
-	if len(payload.Payload) < 2 {
-		return nil, payload, errors.Wrapf(channels.ErrInvalidMessage, "2 push datas needed")
+	if len(payload.Payload) < 3 {
+		return nil, payload, errors.Wrapf(channels.ErrInvalidMessage, "3 push datas needed")
 	}
 
 	version, err := bitcoin.ScriptNumberValue(payload.Payload[0])
@@ -78,13 +80,19 @@ func Parse(payload envelope.Data) (channels.Message, envelope.Data, error) {
 
 	size, err := bitcoin.ScriptNumberValueUnsigned(payload.Payload[1])
 	if err != nil {
-		return nil, payload, errors.Wrap(err, "script number")
+		return nil, payload, errors.Wrap(err, "size script number")
 	}
 
-	payload.Payload = payload.Payload[2:]
+	value, err := bitcoin.ScriptNumberValueUnsigned(payload.Payload[2])
+	if err != nil {
+		return nil, payload, errors.Wrap(err, "value script number")
+	}
 
-	result := &UnlockingSize{
-		UnlockingSize: size,
+	payload.Payload = payload.Payload[3:]
+
+	result := &UnlockingData{
+		Size:  size,
+		Value: value,
 	}
 
 	return result, payload, nil
