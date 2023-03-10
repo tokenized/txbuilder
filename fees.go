@@ -166,6 +166,12 @@ func (tx *TxBuilder) Fee() uint64 {
 	return i - o
 }
 
+func (tx *TxBuilder) ActualFee() int64 {
+	o := int64(tx.OutputValue(true))
+	i := int64(tx.InputValue())
+	return i - o
+}
+
 // EstimatedSize returns the estimated size in bytes of the tx after signatures are added.
 // It assumes all inputs are P2PKH, P2PK, or P2RPH.
 func (tx *TxBuilder) EstimatedSize() int {
@@ -210,7 +216,7 @@ func (tx *TxBuilder) EstimatedFee() uint64 {
 }
 
 func (tx *TxBuilder) CalculateFee() error {
-	_, err := tx.adjustFee(int64(tx.EstimatedFee()) - int64(tx.Fee()))
+	_, err := tx.adjustFee(int64(tx.EstimatedFee()) - tx.ActualFee())
 	return err
 }
 
