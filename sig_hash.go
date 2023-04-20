@@ -17,16 +17,15 @@ import (
 type SigHashType uint32
 
 const (
-	SigHashOld          SigHashType = 0x0
 	SigHashAll          SigHashType = 0x01 // Sign all inputs, all outputs
 	SigHashNone         SigHashType = 0x02 // Sign all inputs, no outputs
 	SigHashSingle       SigHashType = 0x03 // Sign all inputs, only the output at same index as input
 	SigHashAnyOneCanPay SigHashType = 0x80 // When combined, only sign contained input
 	SigHashForkID       SigHashType = 0x40
 
-	// sigHashMask defines the number of bits of the hash type which is used to identify which
-	//   outputs are signed.
-	sigHashMask = 0x1f
+	// sigHashTypeMask defines masks the bits of the hash type used to identify which outputs are
+	// signed.
+	sigHashTypeMask = 0x1f
 )
 
 // SigHashCache allows caching of previously calculated hashes used to calculate the signature hash
@@ -162,8 +161,8 @@ func writeSignatureHashPreimageBytes(w io.Writer, tx *wire.MsgTx, index int, loc
 
 	// If the sighash is anyone can pay, single, or none we write all zeroes for the sequence hash.
 	if hashType&SigHashAnyOneCanPay == 0 &&
-		hashType&sigHashMask != SigHashSingle &&
-		hashType&sigHashMask != SigHashNone {
+		hashType&sigHashTypeMask != SigHashSingle &&
+		hashType&sigHashTypeMask != SigHashNone {
 		w.Write(hashCache.HashSequence(tx))
 	} else {
 		w.Write(zeroHash[:])
@@ -173,7 +172,11 @@ func writeSignatureHashPreimageBytes(w io.Writer, tx *wire.MsgTx, index int, loc
 	tx.TxIn[index].PreviousOutPoint.Serialize(w)
 
 	// Write the locking script being spent.
-	wire.WriteVarBytes(w, 0, lockScript)
+	lockScriptSign, err := afterOpCodeSeparator(lockScript)
+	if err != nil {
+		return errors.Wrap(err, "after op code separator")
+	}
+	wire.WriteVarBytes(w, 0, lockScriptSign)
 
 	// Next, add the input amount, and sequence number of the input being signed.
 	binary.Write(w, binary.LittleEndian, value)
@@ -183,7 +186,7 @@ func writeSignatureHashPreimageBytes(w io.Writer, tx *wire.MsgTx, index int, loc
 	//   target output index to the signature pre-image.
 	if hashType&SigHashSingle != SigHashSingle && hashType&SigHashNone != SigHashNone {
 		w.Write(hashCache.HashOutputs(tx))
-	} else if hashType&sigHashMask == SigHashSingle && index < len(tx.TxOut) {
+	} else if hashType&sigHashTypeMask == SigHashSingle && index < len(tx.TxOut) {
 		var b bytes.Buffer
 		tx.TxOut[index].Serialize(&b, 0, 0)
 		w.Write(bitcoin.DoubleSha256(b.Bytes()))
@@ -196,4 +199,30 @@ func writeSignatureHashPreimageBytes(w io.Writer, tx *wire.MsgTx, index int, loc
 	binary.Write(w, binary.LittleEndian, uint32(hashType|SigHashForkID))
 
 	return nil
+}
+
+// afterOpCodeSeparator returns the portion of the locking script after the last OP_CODESEPARATOR.
+// NOTE: This is only correct if the last OP_CODESEPARATOR is actually executed when the script is
+// executed, so there is room for error here depending on the locking script. --ce
+func afterOpCodeSeparator(lockScript []byte) ([]byte, error) {
+	items, err := bitcoin.ParseScriptItems(bytes.NewReader(lockScript), -1)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse")
+	}
+
+	itemCount := len(items)
+	for i := itemCount - 1; i >= 0; i-- {
+		item := items[i]
+		if item.Type == bitcoin.ScriptItemTypeOpCode && item.OpCode == bitcoin.OP_CODESEPARATOR {
+			println("OP_CODESEPARATOR is item", i, itemCount)
+			if i == itemCount-1 {
+				return nil, nil // OP_CODESEPARATOR is the last op code of the script
+			}
+
+			return items[i+1:].Script()
+		}
+	}
+
+	// No OP_CODESEPARATOR found so return the full locking script.
+	return lockScript, nil
 }

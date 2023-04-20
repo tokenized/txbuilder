@@ -57,8 +57,6 @@ github.com/scottjbarr/redis v0.0.1/go.mod h1:HIzxEkRRpIDMZHOU/iavqyd+uQeQwqQncXo
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
-github.com/tokenized/channels v0.0.0-20230412150925-ee339e3964bd h1:22iW9+D2Vj86HNMHBmwB+sGi80QNnvEkl3hM3jSAWw4=
-github.com/tokenized/channels v0.0.0-20230412150925-ee339e3964bd/go.mod h1:N3gDVoxK9ovKT0Ad8SXMSkYITzMaQPnbFhS/FQ9AQPM=
 github.com/tokenized/channels v0.1.0 h1:XF95dr1cYPSEC8OvLiyp0uZ+9HUXgP27U330hgJbCeU=
 github.com/tokenized/channels v0.1.0/go.mod h1:N3gDVoxK9ovKT0Ad8SXMSkYITzMaQPnbFhS/FQ9AQPM=
 github.com/tokenized/config v0.2.2 h1:dGfFdv3P6JK9TcHvud34vozocm3Qq2Wxbc9PRctgDL8=
@@ -67,8 +65,9 @@ github.com/tokenized/envelope v1.1.0 h1:D30lQzMwtV5wj1YXBHxycSaBJ1MFINL/HuT0kAmz
 github.com/tokenized/envelope v1.1.0/go.mod h1:9+0tL1NKJQNnFRjGhaHCIWG9K6QQnh8HqQPMh9uBFX0=
 github.com/tokenized/logger v0.1.3 h1:Vq/2jEgqyDfjJPgoMo773/bn7ZUow8EWSAY8+gFdTQI=
 github.com/tokenized/logger v0.1.3/go.mod h1:bA5PfUEFwtUy0yEIIq4Q3ZwBk1kIZTkYIRASq3fPw+k=
-github.com/tokenized/pkg v0.6.0 h1:NIClG9+CFK7r5Y1YckqfR1A4JGniRg7qn/F3RFoU2CY=
 github.com/tokenized/pkg v0.6.0/go.mod h1:reIXdZflcfFbuX1RvX90yAjlYVJaUiYDc5CWJ6qCQww=
+github.com/tokenized/pkg v0.6.1-0.20230420132943-cefbedb3c0e1 h1:425MXZ9ETNcSQhXAQx/eMBqXkXsGL0SVRjMzN6fOkVg=
+github.com/tokenized/pkg v0.6.1-0.20230420132943-cefbedb3c0e1/go.mod h1:reIXdZflcfFbuX1RvX90yAjlYVJaUiYDc5CWJ6qCQww=
 github.com/tokenized/threads v0.1.2 h1:olWOi2kZ4GLX4XmRbgHJzMbaTxp7CKMdiMbHJjKZaRQ=
 github.com/tokenized/threads v0.1.2/go.mod h1:+/44KAYA6wqU+AC743pLGBgzkD06IB9+piOOE8BkGK0=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 h1:NXXyQVeRVLK8Xu27/hkkjwVOZLk5v4ZBEvvMtqMqznM=
