@@ -263,8 +263,13 @@ func (tx *TxBuilder) signInput(index int, keys []bitcoin.Key,
 			return nil, bitcoin.ErrUnknownScriptTemplate
 		}
 
-		for _, key := range keys {
-			if !bytes.Equal(key.PublicKey().Bytes(), pubKeyItem.Data) {
+		pubKeyBytes := make([][]byte, len(keys))
+		for i, key := range keys {
+			pubKeyBytes[i] = key.PublicKey().Bytes()
+		}
+
+		for i, key := range keys {
+			if !bytes.Equal(pubKeyBytes[i], pubKeyItem.Data) {
 				continue
 			}
 
@@ -281,7 +286,84 @@ func (tx *TxBuilder) signInput(index int, keys []bitcoin.Key,
 		return nil, ErrMissingPrivateKey
 	}
 
-	return nil, errors.Wrap(ErrWrongScriptTemplate, "Not a P2PKH or P2PK locking script")
+	if required, total, err := lockingScript.MultiPKHCounts(); err == nil {
+		pubKeyHashes := make([][]byte, len(keys))
+		for i, key := range keys {
+			pubKeyHashes[i] = bitcoin.Hash160(key.PublicKey().Bytes())
+		}
+
+		scriptItems, err := bitcoin.ParseScriptItems(bytes.NewReader(lockingScript), -1)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse locking script")
+		}
+
+		var usedKeys []bitcoin.Key
+		count := uint32(0)
+		signedCount := uint32(0)
+		completed := false
+		var subUnlockingScripts []bitcoin.Script
+		for _, scriptItem := range scriptItems {
+			if scriptItem.Type != bitcoin.ScriptItemTypePushData {
+				continue
+			}
+
+			foundKey := false
+			for i, key := range keys {
+				if !bytes.Equal(pubKeyHashes[i], scriptItem.Data) {
+					continue
+				}
+
+				subUnlockingScript, err := P2PKHUnlockingScript(key, tx.MsgTx, index, lockingScript,
+					value, SigHashAll+SigHashForkID, &shc)
+				if err != nil {
+					return nil, errors.Wrap(err, "unlock script")
+				}
+
+				subUnlockingScript = append(subUnlockingScript, bitcoin.OP_TRUE)
+				subUnlockingScripts = append(subUnlockingScripts, subUnlockingScript)
+
+				usedKeys = append(usedKeys, key)
+				foundKey = true
+				break
+			}
+
+			count++
+			if foundKey {
+				signedCount++
+				if signedCount == required {
+					// Mark any remaining signers as not provided.
+					for count < total {
+						subUnlockingScripts = append(subUnlockingScripts,
+							bitcoin.Script{bitcoin.OP_FALSE})
+						count++
+					}
+
+					completed = true
+					break
+				}
+			} else {
+				subUnlockingScripts = append(subUnlockingScripts,
+					bitcoin.Script{bitcoin.OP_FALSE})
+			}
+		}
+
+		if completed {
+			// Reverse sub-unlocking scripts into final script.
+			unlockingScript := &bytes.Buffer{}
+			l := len(subUnlockingScripts)
+			for i := l - 1; i >= 0; i-- {
+				unlockingScript.Write(subUnlockingScripts[i])
+			}
+
+			tx.MsgTx.TxIn[index].UnlockingScript = bitcoin.Script(unlockingScript.Bytes())
+			return usedKeys, nil
+		} else {
+			return nil, errors.Wrapf(ErrMissingPrivateKey, "multi-pkg %d of %d: signers %d",
+				required, total, signedCount)
+		}
+	}
+
+	return nil, errors.Wrap(ErrWrongScriptTemplate, "Not P2MultiPKH, P2PKH, or P2PK locking script")
 }
 
 func P2PKHUnlockingScript(key bitcoin.Key, tx *wire.MsgTx, index int,
