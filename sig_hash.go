@@ -136,6 +136,18 @@ func SignatureHash(tx *wire.MsgTx, index int, lockScript []byte, value uint64,
 	return &hash, nil
 }
 
+func SignaturePreimage(tx *wire.MsgTx, index int, lockScript []byte, value uint64,
+	hashType SigHashType, hashCache *SigHashCache) ([]byte, error) {
+
+	buf := &bytes.Buffer{}
+	if err := writeSignatureHashPreimageBytes(buf, tx, index, lockScript, value, hashType,
+		hashCache); err != nil {
+		return nil, errors.Wrap(err, "write sig hash bytes")
+	}
+
+	return buf.Bytes(), nil
+}
+
 func writeSignatureHashPreimageBytes(w io.Writer, tx *wire.MsgTx, index int, lockScript []byte,
 	value uint64, hashType SigHashType, hashCache *SigHashCache) error {
 
@@ -214,7 +226,6 @@ func afterOpCodeSeparator(lockScript []byte) ([]byte, error) {
 	for i := itemCount - 1; i >= 0; i-- {
 		item := items[i]
 		if item.Type == bitcoin.ScriptItemTypeOpCode && item.OpCode == bitcoin.OP_CODESEPARATOR {
-			println("OP_CODESEPARATOR is item", i, itemCount)
 			if i == itemCount-1 {
 				return nil, nil // OP_CODESEPARATOR is the last op code of the script
 			}

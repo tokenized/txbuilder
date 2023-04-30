@@ -8,7 +8,7 @@ require (
 	github.com/tokenized/config v0.2.2
 	github.com/tokenized/envelope v1.1.0
 	github.com/tokenized/logger v0.1.3
-	github.com/tokenized/pkg v0.6.1-0.20230420132943-cefbedb3c0e1
+	github.com/tokenized/pkg v0.6.1-0.20230501154733-c08b6c3669c6
 )
 
 require (
@@ -23,5 +23,5 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/tokenized/threads v0.1.2 // indirect
 	github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 // indirect
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
+	golang.org/x/crypto v0.8.0 // indirect
 )
