@@ -4,11 +4,12 @@ go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
+	github.com/tokenized/bitcoin_interpreter v0.0.0-20230509022939-1e288315f373
 	github.com/tokenized/channels v0.1.0
 	github.com/tokenized/config v0.2.2
 	github.com/tokenized/envelope v1.1.0
 	github.com/tokenized/logger v0.1.3
-	github.com/tokenized/pkg v0.6.1-0.20230501154733-c08b6c3669c6
+	github.com/tokenized/pkg v0.6.1-0.20230506233527-a5c9347222a3
 )
 
 require (
