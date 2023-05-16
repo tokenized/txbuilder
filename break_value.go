@@ -66,11 +66,11 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 			}
 			remaining -= outputFee
 
-			if remaining <= dustLimit || remaining < breakValue {
+			if remaining < dustLimit || remaining < breakValue {
 				remaining += outputFee // abort adding this output, so add the fee for it back in
 				break                  // remaining amount is less than dust required to include next address
 			}
-		} else if remaining <= dustLimit || remaining < breakValue {
+		} else if remaining < dustLimit || remaining < breakValue {
 			break // remaining amount is less than dust required to include next address
 		}
 
@@ -140,7 +140,7 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 	} else {
 		_, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate, feeRate)
 
-		if remaining > dustLimit {
+		if remaining >= dustLimit {
 			result = append(result, &Output{
 				TxOut: wire.TxOut{
 					Value:         remaining,
