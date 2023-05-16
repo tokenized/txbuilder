@@ -9,7 +9,7 @@ require (
 	github.com/tokenized/config v0.2.2
 	github.com/tokenized/envelope v1.1.0
 	github.com/tokenized/logger v0.1.3
-	github.com/tokenized/pkg v0.6.1-0.20230512174656-a55d7ba7e3bc
+	github.com/tokenized/pkg v0.7.0
 )
 
 require (
