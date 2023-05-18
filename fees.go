@@ -256,15 +256,26 @@ func (tx *TxBuilder) OutputValue(includeChange bool) uint64 {
 	return outputValue
 }
 
-// changeSum returns the sum of the values of the outputs.
-func (tx *TxBuilder) changeSum() uint64 {
-	changeValue := uint64(0)
+// Remainder returns the total value that we can get back by removing change.
+func (tx *TxBuilder) Remainder() uint64 {
+	value := uint64(0)
 	for i, output := range tx.MsgTx.TxOut {
 		if tx.Outputs[i].IsRemainder {
-			changeValue += uint64(output.Value)
+			value += EstimatedFeeValueDown(uint64(output.SerializeSize()), float64(tx.FeeRate))
+			value += uint64(output.Value)
 		}
 	}
-	return changeValue
+	return value
+}
+
+func (tx *TxBuilder) changeSum() uint64 {
+	value := uint64(0)
+	for i, output := range tx.MsgTx.TxOut {
+		if tx.Outputs[i].IsRemainder {
+			value += uint64(output.Value)
+		}
+	}
+	return value
 }
 
 // adjustFee adjusts the tx fee up or down depending on if the amount is negative or positive.
@@ -384,4 +395,8 @@ func VarIntSerializeSize(val uint64) int {
 
 func EstimatedFeeValue(size uint64, feeRate float64) uint64 {
 	return uint64(math.Ceil(float64(size) * feeRate))
+}
+
+func EstimatedFeeValueDown(size uint64, feeRate float64) uint64 {
+	return uint64(math.Floor(float64(size) * feeRate))
 }

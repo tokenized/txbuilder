@@ -1,6 +1,8 @@
 package txbuilder
 
 import (
+	"fmt"
+
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"
 
@@ -238,6 +240,23 @@ func (tx *TxBuilder) AddValueToOutput(index uint32, value uint64) error {
 	} else {
 		tx.MsgTx.TxOut[index].Value += value
 	}
+	return nil
+}
+
+// SubtractValueFromOutput subtracts bitcoin from an existing output.
+func (tx *TxBuilder) SubtractValueFromOutput(index uint32, value uint64) error {
+	if int(index) >= len(tx.MsgTx.TxOut) {
+		return errors.New("Output index out of range")
+	}
+
+	dust := DustLimitForOutput(tx.MsgTx.TxOut[index], tx.DustFeeRate)
+
+	if tx.MsgTx.TxOut[index].Value-dust < value {
+		return fmt.Errorf("Output value too small to subtract : %d - %d (dust %d)",
+			tx.MsgTx.TxOut[index].Value, value, dust)
+	}
+
+	tx.MsgTx.TxOut[index].Value -= value
 	return nil
 }
 
