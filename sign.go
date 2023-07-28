@@ -31,7 +31,7 @@ func (tx *TxBuilder) AllInputsAreSigned() bool {
 
 // SignP2PKHInput sets the signature script on the specified PKH input.
 // This should only be used when you aren't signing for all inputs and the fee is overestimated, so
-//   it needs no adjustement.
+// it needs no adjustement.
 func (tx *TxBuilder) SignP2PKHInput(index int, key bitcoin.Key, hashCache *SigHashCache) error {
 	if index >= len(tx.Inputs) {
 		return errors.New("Input index out of range")
@@ -61,7 +61,8 @@ func (tx *TxBuilder) SignP2PKHInput(index int, key bitcoin.Key, hashCache *SigHa
 }
 
 // Sign estimates and updates the fee, signs all inputs, and corrects the fee if necessary.
-//   keys is a slice of all keys required to sign all inputs. They do not have to be in any order.
+// keys is a slice of all keys required to sign all inputs. They do not have to be in any order.
+//
 // TODO Upgrade to sign more than just P2PKH inputs.
 func (tx *TxBuilder) Sign(keys []bitcoin.Key) ([]bitcoin.Key, error) {
 	// Update fee to estimated amount
@@ -414,7 +415,7 @@ func P2SHUnlockingScript(script []byte) ([]byte, error) {
 
 // P2MultiPKHUnlockingScript returns an unlocking script for a P2MultiPKH locking script.
 // Provide all public keys in order. Signatures should be the same length as the public keys and
-//   have empty entries when that key didn't sign.
+// have empty entries when that key didn't sign.
 func P2MultiPKHUnlockingScript(required uint16, pubKeys [][]byte, sigs [][]byte) ([]byte, error) {
 	if len(pubKeys) != len(sigs) {
 		return nil, errors.New("Same number of public keys and signatures required")
@@ -457,7 +458,7 @@ func P2RPHUnlockingScript(k []byte) ([]byte, error) {
 }
 
 // InputSignature returns the serialized ECDSA signature for the input index of the specified
-//   transaction, with hashType appended to it.
+// transaction, with hashType appended to it.
 func InputSignature(key bitcoin.Key, tx *wire.MsgTx, index int, lockScript []byte,
 	value uint64, hashType SigHashType, hashCache *SigHashCache) ([]byte, error) {
 

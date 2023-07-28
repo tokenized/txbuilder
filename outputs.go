@@ -106,7 +106,7 @@ func (tx *TxBuilder) SetChangeLockingScript(lockingScript bitcoin.Script, keyID 
 }
 
 // AddPaymentOutput adds an output to TxBuilder with the specified value and a script paying the
-//   specified address.
+// specified address.
 // isRemainder marks the output to receive remaining bitcoin after fees are taken.
 func (tx *TxBuilder) AddPaymentOutput(address bitcoin.RawAddress, value uint64,
 	isRemainder bool) error {
@@ -119,11 +119,11 @@ func (tx *TxBuilder) AddPaymentOutput(address bitcoin.RawAddress, value uint64,
 }
 
 // AddP2PKHDustOutput adds an output to TxBuilder with the dust limit amount and a script paying the
-//   specified address.
+// specified address.
 // isRemainder marks the output to receive remaining bitcoin.
 // These dust outputs are meant as "notifiers" so that an address will see this transaction and
-//   process the data in it. If value is later added to this output, the value replaces the dust
-//   limit amount rather than adding to it.
+// process the data in it. If value is later added to this output, the value replaces the dust
+// limit amount rather than adding to it.
 func (tx *TxBuilder) AddDustOutput(address bitcoin.RawAddress, isRemainder bool) error {
 	script, err := address.LockingScript()
 	if err != nil {
@@ -153,7 +153,7 @@ func (tx *TxBuilder) AddMaxScriptOutput(script bitcoin.Script) error {
 // AddOutput adds an output to TxBuilder with the specified script and value.
 // isRemainder marks the output to receive remaining bitcoin after fees are taken.
 // isDust marks the output as a dust amount which will be replaced by any non-dust amount if an
-//   amount is added later. It also sets the amount to the calculated dust value.
+// amount is added later. It also sets the amount to the calculated dust value.
 func (tx *TxBuilder) AddOutput(lockScript bitcoin.Script, value uint64,
 	isRemainder, isDust bool) error {
 

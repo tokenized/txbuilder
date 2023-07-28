@@ -105,9 +105,10 @@ func (tx *TxBuilder) InsertInput(index int, utxo bitcoin.UTXO) error {
 }
 
 // AddInput adds an input to TxBuilder.
-//   outpoint reference the output being spent.
-//   lockingScript is the script from the output being spent.
-//   value is the number of satoshis from the output being spent.
+//
+//	outpoint - reference the output being spent.
+//	lockingScript - the script from the output being spent.
+//	value - the number of satoshis from the output being spent.
 func (tx *TxBuilder) AddInput(outpoint wire.OutPoint, lockingScript bitcoin.Script,
 	value uint64) error {
 
@@ -140,7 +141,7 @@ func (tx *TxBuilder) RemoveInput(index int) error {
 }
 
 // AddFunding adds inputs spending the specified UTXOs until the transaction has enough funding to
-//   cover the fees and outputs.
+// cover the fees and outputs.
 // If SendMax is set then all UTXOs are added as inputs.
 func (tx *TxBuilder) AddFunding(utxos []bitcoin.UTXO) error {
 	inputValue := tx.InputValue()

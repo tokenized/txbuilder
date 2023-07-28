@@ -29,9 +29,9 @@ const (
 )
 
 // SigHashCache allows caching of previously calculated hashes used to calculate the signature hash
-//   for signing tx inputs.
+// for signing tx inputs.
 // This allows validation to re-use previous hashing computation, reducing the complexity of
-//   validating SigHashAll inputs rom  O(N^2) to O(N).
+// validating SigHashAll inputs rom  O(N^2) to O(N).
 type SigHashCache struct {
 	hashPrevOuts []byte
 	hashSequence []byte
@@ -39,7 +39,7 @@ type SigHashCache struct {
 }
 
 // Clear resets all the hashes. This should be used if anything in the transaction changes and the
-//   signatures need to be recalculated.
+// signatures need to be recalculated.
 func (shc *SigHashCache) Clear() {
 	shc.hashPrevOuts = nil
 	shc.hashSequence = nil
@@ -47,13 +47,13 @@ func (shc *SigHashCache) Clear() {
 }
 
 // ClearOutputs resets the outputs hash. This should be used if anything in the transaction outputs
-//   changes and the signatures need to be recalculated.
+// changes and the signatures need to be recalculated.
 func (shc *SigHashCache) ClearOutputs() {
 	shc.hashOutputs = nil
 }
 
 // HashPrevOuts calculates a single hash of all the previous outputs (txid:index) referenced within
-//   the specified transaction.
+// the specified transaction.
 func (shc *SigHashCache) HashPrevOuts(tx *wire.MsgTx) []byte {
 	if shc.hashPrevOuts != nil {
 		return shc.hashPrevOuts
@@ -69,7 +69,7 @@ func (shc *SigHashCache) HashPrevOuts(tx *wire.MsgTx) []byte {
 }
 
 // HashSequence computes an aggregated hash of each of the sequence numbers within the inputs of the
-//   passed transaction.
+// passed transaction.
 func (shc *SigHashCache) HashSequence(tx *wire.MsgTx) []byte {
 	if shc.hashSequence != nil {
 		return shc.hashSequence
@@ -85,7 +85,7 @@ func (shc *SigHashCache) HashSequence(tx *wire.MsgTx) []byte {
 }
 
 // HashOutputs computes a hash digest of all outputs created by the transaction encoded using the
-//   wire format.
+// wire format.
 func (shc *SigHashCache) HashOutputs(tx *wire.MsgTx) []byte {
 	if shc.hashOutputs != nil {
 		return shc.hashOutputs
@@ -113,15 +113,17 @@ func SignatureHashPreimageBytes(tx *wire.MsgTx, index int, lockScript []byte, va
 }
 
 // SignatureHash computes the hash to be signed for a transaction's input using the new, optimized
-//   digest calculation algorithm defined in BIP0143:
-//   https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki.
+// digest calculation algorithm defined in BIP0143:
+// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki.
+//
 // This function makes use of pre-calculated hash fragments stored within the passed SigHashCache to
-//   eliminate duplicate hashing computations when calculating the final digest, reducing the
-//   complexity from O(N^2) to O(N).
+// eliminate duplicate hashing computations when calculating the final digest, reducing the
+// complexity from O(N^2) to O(N).
+//
 // Additionally, signatures now cover the input value of the referenced unspent output. This allows
-//   offline, or hardware wallets to compute the exact amount being spent, in addition to the final
-//   transaction fee. In the case the wallet if fed an invalid input amount, the real sighash will
-//   differ causing the produced signature to be invalid.
+// offline, or hardware wallets to compute the exact amount being spent, in addition to the final
+// transaction fee. In the case the wallet if fed an invalid input amount, the real sighash will
+// differ causing the produced signature to be invalid.
 func SignatureHash(tx *wire.MsgTx, index int, lockScript []byte, value uint64,
 	hashType SigHashType, hashCache *SigHashCache) (*bitcoin.Hash32, error) {
 
