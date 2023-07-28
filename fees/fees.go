@@ -223,6 +223,11 @@ func OutputSize(lockingScript bitcoin.Script) int {
 		wire.VarIntSerializeSize(uint64(scriptSize)) + scriptSize // locking script
 }
 
+func OutputSizeForLockingScriptSize(lockingScriptSize int) int {
+	return OutputBaseSize + // value
+		wire.VarIntSerializeSize(uint64(lockingScriptSize)) + lockingScriptSize // locking script
+}
+
 // DustLimit calculates the dust limit for an output.
 func DustLimit(outputSize int, dustFeeRate float64) uint64 {
 	if dustFeeRate == 0 {
@@ -247,6 +252,10 @@ func DustLimitForLockingScript(lockingScript bitcoin.Script, feeRate float64) ui
 		LockingScript: lockingScript,
 	}
 	return DustLimitForOutput(output, feeRate)
+}
+
+func DustLimitForLockingScriptSize(lockingScriptSize int, feeRate float64) uint64 {
+	return DustLimit(OutputSizeForLockingScriptSize(lockingScriptSize), feeRate)
 }
 
 // OutputFeeAndDustForLockingScript returns the tx fee required to include the locking script as an
