@@ -216,7 +216,12 @@ func (tx *TxBuilder) EstimatedFee() uint64 {
 }
 
 func (tx *TxBuilder) CalculateFee() error {
-	_, err := tx.adjustFee(int64(tx.EstimatedFee()) - tx.ActualFee())
+	_, err := tx.AdjustFee(int64(tx.EstimatedFee()) - tx.ActualFee())
+	return err
+}
+
+func (tx *TxBuilder) ZeroizeFee() error {
+	_, err := tx.AdjustFee(-tx.ActualFee())
 	return err
 }
 
@@ -280,7 +285,7 @@ func (tx *TxBuilder) changeSum() uint64 {
 
 // adjustFee adjusts the tx fee up or down depending on if the amount is negative or positive.
 // It returns true if no further fee adjustments should be attempted.
-func (tx *TxBuilder) adjustFee(amount int64) (bool, error) {
+func (tx *TxBuilder) AdjustFee(amount int64) (bool, error) {
 	if amount == int64(0) {
 		return true, nil
 	}
