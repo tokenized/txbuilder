@@ -6,9 +6,9 @@ import (
 	"github.com/tokenized/bitcoin_interpreter"
 	"github.com/tokenized/bitcoin_interpreter/agent_bitcoin_transfer"
 	"github.com/tokenized/channels"
+	"github.com/tokenized/channels/unlocking_data"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"
-	"github.com/tokenized/txbuilder/unlocking_data"
 
 	"github.com/pkg/errors"
 )
