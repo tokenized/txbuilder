@@ -217,6 +217,11 @@ func InputValue(txin *wire.TxIn, inputOutput *wire.TxOut) (uint64, error) {
 	return unlockingData.Size, nil
 }
 
+func InputSizeForUnlockingScriptSize(unlockingScriptSize int) int {
+	return InputBaseSize + // outpoint + sequence
+		wire.VarIntSerializeSize(uint64(unlockingScriptSize)) + unlockingScriptSize // unlocking script
+}
+
 func OutputSize(lockingScript bitcoin.Script) int {
 	scriptSize := len(lockingScript)
 	return OutputBaseSize + // value
