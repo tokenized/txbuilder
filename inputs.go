@@ -418,6 +418,15 @@ func UTXOFee(utxo bitcoin.UTXO, feeRate float32) (uint64, error) {
 	return EstimatedFeeValue(uint64(size), float64(feeRate)), nil
 }
 
+func UTXOInputSizeAndFee(utxo bitcoin.UTXO, feeRate float32) (int, uint64, error) {
+	size, err := InputSize(utxo.LockingScript)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "unlock size")
+	}
+
+	return size, EstimatedFeeValue(uint64(size), float64(feeRate)), nil
+}
+
 // LockingScriptInputFee returns the tx fee to include an locking script as an output in a tx.
 func LockingScriptInputFee(lockingScript bitcoin.Script, feeRate float32) (uint64, error) {
 	size, err := InputSize(lockingScript)

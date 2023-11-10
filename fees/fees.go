@@ -263,6 +263,15 @@ func DustLimitForLockingScriptSize(lockingScriptSize int, feeRate float64) uint6
 	return DustLimit(OutputSizeForLockingScriptSize(lockingScriptSize), feeRate)
 }
 
+func OutputFeeForLockingScript(lockingScript bitcoin.Script, feeRate float64) uint64 {
+	output := &wire.TxOut{
+		LockingScript: lockingScript,
+	}
+	outputSize := output.SerializeSize()
+
+	return EstimateFeeValue(outputSize, float64(feeRate))
+}
+
 // OutputFeeAndDustForLockingScript returns the tx fee required to include the locking script as an
 // output in a tx and the dust limit of that output.
 func OutputFeeAndDustForLockingScript(lockingScript bitcoin.Script,
@@ -273,6 +282,16 @@ func OutputFeeAndDustForLockingScript(lockingScript bitcoin.Script,
 	}
 	outputSize := output.SerializeSize()
 
-	return EstimateFeeValue(outputSize, float64(feeRate)),
-		DustLimit(outputSize, dustFeeRate)
+	return EstimateFeeValue(outputSize, float64(feeRate)), DustLimit(outputSize, dustFeeRate)
+}
+
+func OutputSizeAndDustForLockingScript(lockingScript bitcoin.Script,
+	dustFeeRate float64) (int, uint64) {
+
+	output := &wire.TxOut{
+		LockingScript: lockingScript,
+	}
+	outputSize := output.SerializeSize()
+
+	return outputSize, DustLimit(outputSize, dustFeeRate)
 }
