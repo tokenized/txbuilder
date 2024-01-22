@@ -83,6 +83,56 @@ func NewTxBuilder(feeRate, dustFeeRate float32) *TxBuilder {
 	return &result
 }
 
+func (tx TxBuilder) Copy() TxBuilder {
+	result := TxBuilder{
+		Inputs:       make([]*InputSupplement, len(tx.Inputs)),
+		Outputs:      make([]*OutputSupplement, len(tx.Outputs)),
+		ChangeScript: tx.ChangeScript.Copy(),
+		FeeRate:      tx.FeeRate,
+		SendMax:      tx.SendMax,
+		DustFeeRate:  tx.DustFeeRate,
+		ChangeKeyID:  CopyString(tx.ChangeKeyID),
+	}
+
+	copyMsgTx := tx.MsgTx.Copy()
+	result.MsgTx = &copyMsgTx
+
+	for i, input := range tx.Inputs {
+		c := input.Copy()
+		result.Inputs[i] = &c
+	}
+
+	for i, output := range tx.Outputs {
+		c := output.Copy()
+		result.Outputs[i] = &c
+	}
+
+	return result
+}
+
+func (input InputSupplement) Copy() InputSupplement {
+	return InputSupplement{
+		LockingScript: input.LockingScript.Copy(),
+		Value:         input.Value,
+		KeyID:         CopyString(input.KeyID),
+	}
+}
+
+func (output OutputSupplement) Copy() OutputSupplement {
+	return OutputSupplement{
+		IsRemainder: output.IsRemainder,
+		IsDust:      output.IsDust,
+		addedForFee: output.addedForFee,
+		KeyID:       CopyString(output.KeyID),
+	}
+}
+
+func CopyString(s string) string {
+	result := make([]byte, len(s))
+	copy(result, s)
+	return string(result)
+}
+
 func NewTxBuilderFromTransactionWithOutputs(feeRate, dustFeeRate float32,
 	tx TransactionWithOutputs) (*TxBuilder, error) {
 
