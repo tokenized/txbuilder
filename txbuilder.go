@@ -337,6 +337,10 @@ func (tx *TxBuilder) InputOutput(index int) (*wire.TxOut, error) {
 	}
 
 	input := tx.Inputs[index]
+	if len(input.LockingScript) == 0 && input.Value == 0 {
+		return nil, errors.New("Missing input output")
+	}
+
 	return &wire.TxOut{
 		LockingScript: input.LockingScript,
 		Value:         input.Value,

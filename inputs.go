@@ -55,7 +55,8 @@ func (tx *TxBuilder) UpdateInputUTXO(index int, utxo bitcoin.UTXO) error {
 
 		if input.PreviousOutPoint.Hash.Equal(&utxo.Hash) &&
 			input.PreviousOutPoint.Index == utxo.Index {
-			return errors.Wrap(ErrDuplicateInput, "")
+			return errors.Wrapf(ErrDuplicateInput, "%s:%d", input.PreviousOutPoint.Hash,
+				input.PreviousOutPoint.Index)
 		}
 	}
 
@@ -80,7 +81,8 @@ func (tx *TxBuilder) InsertInput(index int, utxo bitcoin.UTXO) error {
 	for _, input := range tx.MsgTx.TxIn {
 		if input.PreviousOutPoint.Hash.Equal(&utxo.Hash) &&
 			input.PreviousOutPoint.Index == utxo.Index {
-			return errors.Wrap(ErrDuplicateInput, "")
+			return errors.Wrapf(ErrDuplicateInput, "%s:%d", input.PreviousOutPoint.Hash,
+				input.PreviousOutPoint.Index)
 		}
 	}
 
@@ -116,7 +118,7 @@ func (tx *TxBuilder) AddInput(outpoint wire.OutPoint, lockingScript bitcoin.Scri
 	for _, input := range tx.MsgTx.TxIn {
 		if input.PreviousOutPoint.Hash.Equal(&outpoint.Hash) &&
 			input.PreviousOutPoint.Index == outpoint.Index {
-			return errors.Wrap(ErrDuplicateInput, "")
+			return errors.Wrapf(ErrDuplicateInput, "%d %s", outpoint.Index, outpoint.Hash)
 		}
 	}
 
@@ -427,7 +429,7 @@ func UTXOInputSizeAndFee(utxo bitcoin.UTXO, feeRate float32) (int, uint64, error
 	return size, EstimatedFeeValue(uint64(size), float64(feeRate)), nil
 }
 
-// LockingScriptInputFee returns the tx fee to include an locking script as an output in a tx.
+// LockingScriptInputFee returns the tx fee to spend a locking script in an input in a tx.
 func LockingScriptInputFee(lockingScript bitcoin.Script, feeRate float32) (uint64, error) {
 	size, err := InputSize(lockingScript)
 	if err != nil {
