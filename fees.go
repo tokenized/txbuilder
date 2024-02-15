@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/tokenized/bitcoin_interpreter/agent_bitcoin_transfer"
 	"github.com/tokenized/channels"
 	"github.com/tokenized/channels/unlocking_data"
 	"github.com/tokenized/pkg/bitcoin"
@@ -110,27 +111,37 @@ const (
 // UnlockingScriptSize calculates the length of the unlocking script needed to unlock the specified
 // locking script.
 func UnlockingScriptSize(lockingScript bitcoin.Script) (int, error) {
-	scriptSize := 0
-
 	if lockingScript.IsP2PK() {
 		// Only a signature in a P2PK unlocking script
-		scriptSize = MaxSignaturesPushDataSize
-	} else if lockingScript.IsP2PKH() {
-		// Signature and a public key in a P2PKH unlocking script
-		scriptSize = MaxSignaturesPushDataSize + PublicKeyPushDataSize
-	} else {
-		required, total, err := lockingScript.MultiPKHCounts()
-		if err != nil {
-			return 0, bitcoin.ErrWrongScriptTemplate
-		}
+		return MaxSignaturesPushDataSize, nil
+	}
 
-		scriptSize = int(total - required) // OP_FALSE for all signatures not included
+	if lockingScript.IsP2PKH() {
+		// Signature and a public key in a P2PKH unlocking script
+		return MaxSignaturesPushDataSize + PublicKeyPushDataSize, nil
+	}
+
+	if required, total, err := lockingScript.MultiPKHCounts(); err == nil {
+		scriptSize := int(total - required) // OP_FALSE for all signatures not included
 
 		// Signature, public key and OP_TRUE for each required signature
 		scriptSize += int(required) * (MaxSignaturesPushDataSize + PublicKeyPushDataSize + 1)
+
+		return scriptSize, nil
 	}
 
-	return scriptSize, nil
+	if info, err := agent_bitcoin_transfer.MatchScript(lockingScript); err == nil && info != nil {
+		agentUnlockingScript := info.AgentLockingScript.Copy()
+		agentUnlockingScript.RemoveHardVerify()
+		agentUnlockingSize, err := UnlockingScriptSize(agentUnlockingScript)
+		if err != nil {
+			return 0, errors.Wrap(err, "agent unlocking size")
+		}
+
+		return agent_bitcoin_transfer.ApproveUnlockingSize(agentUnlockingSize), nil
+	}
+
+	return 0, bitcoin.ErrUnknownScriptTemplate
 }
 
 // InputSize returns the serialize size in bytes of an input spending the specified locking script.
@@ -201,6 +212,7 @@ func (tx *TxBuilder) EstimatedSize() int {
 			result += MaximumP2PKHInputSize // Fall back to P2PKH
 			continue
 		}
+
 		result += size
 	}
 
