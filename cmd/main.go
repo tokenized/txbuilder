@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tokenized/arc/pkg/tef"
 	"github.com/tokenized/config"
 	"github.com/tokenized/logger"
 	"github.com/tokenized/pkg/bitcoin"
@@ -50,6 +51,9 @@ func main() {
 	switch os.Args[1] {
 	case "create_send":
 		CreateSend(ctx, cfg, os.Args[2:])
+
+	case "create_sends":
+		CreateSends(ctx, cfg, os.Args[2:])
 	}
 }
 
@@ -139,6 +143,156 @@ func CreateSend(ctx context.Context, cfg *Config, args []string) {
 
 	h := hex.EncodeToString(buf.Bytes())
 	fmt.Printf("Tx Hex : %s\n", h)
+
+	tefBuf := &bytes.Buffer{}
+	if err := tef.Serialize(tefBuf, tx); err != nil {
+		fmt.Printf("Failed to serialize extended tx format : %s\n", err)
+		return
+	}
+
+	h = hex.EncodeToString(tefBuf.Bytes())
+	fmt.Printf("Extended Tx Hex : %s\n", h)
+}
+
+// CreateSend creates a chain of transactions that moves a bitcoin balance, minus the fee.
+// Multiple outpoints can be specified.
+// Parameters: <WIF key> <To Address> <Send Amount> <OutpointHash:Index> ...
+func CreateSends(ctx context.Context, cfg *Config, args []string) {
+	if len(args) < 3 {
+		logger.Fatal(ctx, "Wrong argument count: create_send [Count] [Key] [Outpoints]...")
+	}
+
+	count, err := strconv.Atoi(args[0])
+	if err != nil {
+		fmt.Printf("Invalid amount : %s : %s\n", args[0], err)
+		return
+	}
+
+	key, err := bitcoin.KeyFromStr(args[1])
+	if err != nil {
+		fmt.Printf("Invalid key : %s : %s\n", args[1], err)
+		return
+	}
+
+	changeAddress, err := key.RawAddress()
+	if err != nil {
+		fmt.Printf("Failed to generate change address from key : %s\n", err)
+		return
+	}
+
+	tx := txbuilder.NewTxBuilder(cfg.FeeRate, cfg.DustFeeRate)
+	for i := 2; i < len(args); i++ {
+		outpoint, err := wire.OutPointFromStr(args[i])
+		if err != nil {
+			fmt.Printf("Invalid outpoint : %s : %s\n", args[i], err)
+			return
+		}
+
+		outpointTx, err := GetTx(ctx, outpoint.Hash)
+		if err != nil {
+			fmt.Printf("Failed to get outpoint tx : %s\n", err)
+			return
+		}
+
+		if outpoint.Index >= uint32(len(outpointTx.TxOut)) {
+			fmt.Printf("Invalid outpoint index : %d >= %d\n", outpoint.Index, len(outpointTx.TxOut))
+			return
+		}
+
+		output := outpointTx.TxOut[outpoint.Index]
+		if err := tx.AddInput(*outpoint, output.LockingScript, output.Value); err != nil {
+			fmt.Printf("Failed to add spend of outpoint : %s\n", err)
+			return
+		}
+	}
+
+	if err := tx.SetChangeAddress(changeAddress, ""); err != nil {
+		fmt.Printf("Failed to set change address : %s\n", err)
+		return
+	}
+
+	if _, err := tx.Sign([]bitcoin.Key{key}); err != nil {
+		fmt.Printf("Failed to sign transaction : %s\n", err)
+		return
+	}
+
+	buf := &bytes.Buffer{}
+	if err := tx.MsgTx.Serialize(buf); err != nil {
+		fmt.Printf("Failed to serialize tx : %s\n", err)
+		return
+	}
+
+	fmt.Printf("Tx : %s\n", tx.MsgTx.StringWithAddresses(bitcoin.MainNet))
+
+	h := hex.EncodeToString(buf.Bytes())
+	fmt.Printf("Tx Hex : %s\n", h)
+
+	tefBuf := &bytes.Buffer{}
+	if err := tef.Serialize(tefBuf, tx); err != nil {
+		fmt.Printf("Failed to serialize extended tx format : %s\n", err)
+		return
+	}
+
+	h = hex.EncodeToString(tefBuf.Bytes())
+	fmt.Printf("Extended Tx Hex : %s\n", h)
+
+	cumulativeTefBuf := &bytes.Buffer{}
+	if err := tef.Serialize(cumulativeTefBuf, tx); err != nil {
+		fmt.Printf("Failed to serialize extended tx format : %s\n", err)
+		return
+	}
+
+	for i := 1; i < count; i++ {
+		previousTxID := *tx.MsgTx.TxHash()
+		outpointTx := tx.MsgTx
+
+		tx = txbuilder.NewTxBuilder(cfg.FeeRate, cfg.DustFeeRate)
+
+		output := outpointTx.TxOut[0]
+		if err := tx.AddInput(wire.OutPoint{previousTxID, 0}, output.LockingScript,
+			output.Value); err != nil {
+			fmt.Printf("Failed to add spend of outpoint : %s\n", err)
+			return
+		}
+
+		if err := tx.SetChangeAddress(changeAddress, ""); err != nil {
+			fmt.Printf("Failed to set change address : %s\n", err)
+			return
+		}
+
+		if _, err := tx.Sign([]bitcoin.Key{key}); err != nil {
+			fmt.Printf("Failed to sign transaction : %s\n", err)
+			return
+		}
+
+		buf := &bytes.Buffer{}
+		if err := tx.MsgTx.Serialize(buf); err != nil {
+			fmt.Printf("Failed to serialize tx : %s\n", err)
+			return
+		}
+
+		fmt.Printf("Tx : %s\n", tx.MsgTx.StringWithAddresses(bitcoin.MainNet))
+
+		h := hex.EncodeToString(buf.Bytes())
+		fmt.Printf("Tx Hex : %s\n", h)
+
+		tefBuf := &bytes.Buffer{}
+		if err := tef.Serialize(tefBuf, tx); err != nil {
+			fmt.Printf("Failed to serialize extended tx format : %s\n", err)
+			return
+		}
+
+		h = hex.EncodeToString(tefBuf.Bytes())
+		fmt.Printf("Extended Tx Hex : %s\n", h)
+
+		if err := tef.Serialize(cumulativeTefBuf, tx); err != nil {
+			fmt.Printf("Failed to serialize extended tx format : %s\n", err)
+			return
+		}
+	}
+
+	h = hex.EncodeToString(cumulativeTefBuf.Bytes())
+	fmt.Printf("Cumulative Extended Txs Hex : %s\n", h)
 }
 
 func GetTx(ctx context.Context, hash bitcoin.Hash32) (*wire.MsgTx, error) {

@@ -97,7 +97,7 @@ func (tx *TxBuilder) Sign(keys []bitcoin.Key) ([]bitcoin.Key, error) {
 		// Sign all inputs
 		missingKey := false
 		for index, _ := range tx.Inputs {
-			keys, err := tx.signInput(index, keys, shc)
+			signKeys, err := tx.signInput(index, keys, shc)
 			if err != nil {
 				if errors.Cause(err) == ErrMissingPrivateKey {
 					missingKey = true
@@ -106,7 +106,7 @@ func (tx *TxBuilder) Sign(keys []bitcoin.Key) ([]bitcoin.Key, error) {
 				return nil, errors.Wrap(err, fmt.Sprintf("sign input %d", index))
 			}
 
-			result = appendKeys(result, keys...)
+			result = appendKeys(result, signKeys...)
 		}
 
 		// Check fee and adjust if too low
@@ -181,7 +181,7 @@ func (tx *TxBuilder) SignOnly(keys []bitcoin.Key) ([]bitcoin.Key, error) {
 			continue // already signed
 		}
 
-		keys, err := tx.signInput(index, keys, shc)
+		signKeys, err := tx.signInput(index, keys, shc)
 		if err != nil {
 			if errors.Cause(err) == ErrMissingPrivateKey {
 				missingKey = true
@@ -190,7 +190,7 @@ func (tx *TxBuilder) SignOnly(keys []bitcoin.Key) ([]bitcoin.Key, error) {
 			return nil, errors.Wrap(err, fmt.Sprintf("sign input %d", index))
 		}
 
-		result = appendKeys(result, keys...)
+		result = appendKeys(result, signKeys...)
 	}
 
 	if missingKey {

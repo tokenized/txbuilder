@@ -4,11 +4,12 @@ go 1.18
 
 require (
 	github.com/pkg/errors v0.9.1
+	github.com/tokenized/arc v0.0.0-20240321210357-e5700dc9cc36
 	github.com/tokenized/bitcoin_interpreter v0.1.1
 	github.com/tokenized/channels v0.1.2-0.20240224000422-689cbd7f0d49
 	github.com/tokenized/config v0.2.2
 	github.com/tokenized/logger v0.1.3
-	github.com/tokenized/pkg v0.7.1-0.20230728163803-9a855fa7d049
+	github.com/tokenized/pkg v0.7.1-0.20240318203228-bd5a23006dd1
 )
 
 require (
@@ -25,4 +26,5 @@ require (
 	github.com/tokenized/threads v0.1.2 // indirect
 	github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
