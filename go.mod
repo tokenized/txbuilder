@@ -9,7 +9,7 @@ require (
 	github.com/tokenized/channels v0.1.2-0.20240224000422-689cbd7f0d49
 	github.com/tokenized/config v0.2.2
 	github.com/tokenized/logger v0.1.3
-	github.com/tokenized/pkg v0.7.1-0.20240318203228-bd5a23006dd1
+	github.com/tokenized/pkg v0.7.1-0.20240411200849-7877637f2592
 )
 
 require (
