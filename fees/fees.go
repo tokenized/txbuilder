@@ -151,6 +151,25 @@ func EstimateUnlockingSize(lockingScript bitcoin.Script) (int, error) {
 	return 0, bitcoin.ErrWrongScriptTemplate
 }
 
+// OutputTotalCost calculates the satoshis required in tx fees to include an output with the
+// specified locking script and then to include an input in a tx to spend that output. If the
+// unlocking script size can't be determined it will still return the output fee and a zero for the
+// input size with an error.
+func OutputTotalCost(lockingScript bitcoin.Script, feeRate float64) (uint64, uint64, error) {
+	outputSize := OutputSize(lockingScript)
+
+	unlockingScriptSize, err := EstimateUnlockingSize(lockingScript)
+	if err != nil {
+		return EstimateFeeValue(OutputSize(lockingScript), feeRate), 0,
+			errors.Wrapf(err, "unlocking size")
+	}
+
+	inputSize := InputBaseSize + wire.VarIntSerializeSize(uint64(unlockingScriptSize)) +
+		unlockingScriptSize
+
+	return EstimateFeeValue(outputSize, feeRate), EstimateFeeValue(inputSize, feeRate), nil
+}
+
 func Fee(tx bitcoin_interpreter.TransactionWithOutputs) (int64, error) {
 	inputsValue, err := InputsValue(tx)
 	if err != nil {
