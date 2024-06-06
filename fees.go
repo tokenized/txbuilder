@@ -326,9 +326,11 @@ func (tx *TxBuilder) AdjustFee(amount int64) (bool, error) {
 		// Decrease change, thereby increasing the fee
 		tx.MsgTx.TxOut[changeOutputIndex].Value -= uint64(amount)
 
+		outputFee, inputFee, _ := OutputTotalCost(tx.MsgTx.TxOut[changeOutputIndex].LockingScript,
+			tx.FeeRate)
+
 		// Check if change is below dust
-		if tx.MsgTx.TxOut[changeOutputIndex].Value <
-			DustLimitForOutput(tx.MsgTx.TxOut[changeOutputIndex], tx.DustFeeRate) {
+		if tx.MsgTx.TxOut[changeOutputIndex].Value < outputFee+inputFee {
 			if !tx.Outputs[changeOutputIndex].addedForFee {
 				// Don't remove outputs unless they were added by fee adjustment
 				return false, errors.Wrap(ErrInsufficientValue, "Not enough change for tx fee")
@@ -365,9 +367,8 @@ func (tx *TxBuilder) AdjustFee(amount int64) (bool, error) {
 
 			// Add a change output if it would be more than the dust limit plus the fee to add the
 			// output
-			dustLimit := DustLimitForLockingScript(tx.ChangeScript, tx.DustFeeRate)
-
-			if adjustment > dustLimit {
+			outputFee, inputFee, _ := OutputTotalCost(tx.ChangeScript, tx.FeeRate)
+			if adjustment > outputFee+inputFee {
 				if err := tx.AddOutput(tx.ChangeScript, adjustment, true, false); err != nil {
 					return false, err
 				}

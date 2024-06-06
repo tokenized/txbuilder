@@ -23,13 +23,13 @@ func Test_LowFeeSettlementSign(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to generate key : %s", err)
 	}
-	senderAddress, _ := senderKey.RawAddress()
+	senderScript, _ := senderKey.LockingScript()
 
 	receiverKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
 	if err != nil {
 		t.Fatalf("Failed to generate key : %s", err)
 	}
-	receiverAddress, _ := receiverKey.RawAddress()
+	receiverScript, _ := receiverKey.LockingScript()
 
 	feeKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
 	if err != nil {
@@ -55,11 +55,11 @@ func Test_LowFeeSettlementSign(t *testing.T) {
 		t.Fatalf("Failed to add input : %s", err)
 	}
 
-	if err := txb.AddPaymentOutput(senderAddress, 1, false); err != nil {
+	if err := txb.AddOutput(senderScript, 0, false, true); err != nil {
 		t.Fatalf("Failed to add output : %s", err)
 	}
 
-	if err := txb.AddPaymentOutput(receiverAddress, 1, false); err != nil {
+	if err := txb.AddOutput(receiverScript, 0, false, true); err != nil {
 		t.Fatalf("Failed to add output : %s", err)
 	}
 
@@ -106,13 +106,13 @@ func Test_LowFeeSettlementCalculate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to generate key : %s", err)
 	}
-	senderAddress, _ := senderKey.RawAddress()
+	senderScript, _ := senderKey.LockingScript()
 
 	receiverKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
 	if err != nil {
 		t.Fatalf("Failed to generate key : %s", err)
 	}
-	receiverAddress, _ := receiverKey.RawAddress()
+	receiverScript, _ := receiverKey.LockingScript()
 
 	feeKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
 	if err != nil {
@@ -138,11 +138,11 @@ func Test_LowFeeSettlementCalculate(t *testing.T) {
 		t.Fatalf("Failed to add input : %s", err)
 	}
 
-	if err := txb.AddPaymentOutput(senderAddress, 1, false); err != nil {
+	if err := txb.AddOutput(senderScript, 0, false, true); err != nil {
 		t.Fatalf("Failed to add output : %s", err)
 	}
 
-	if err := txb.AddPaymentOutput(receiverAddress, 1, false); err != nil {
+	if err := txb.AddOutput(receiverScript, 0, false, true); err != nil {
 		t.Fatalf("Failed to add output : %s", err)
 	}
 

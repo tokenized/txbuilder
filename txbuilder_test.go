@@ -760,15 +760,17 @@ func test_Sign_LowFeeChange(t *testing.T) error {
 		return fmt.Errorf("Zero output : %d", i)
 	}
 
-	t.Logf(tx.String(bitcoin.MainNet))
-	t.Logf("Estimated Size : %d", tx.EstimatedSize())
-	t.Logf("Fee : %d", tx.Fee())
-	t.Logf("Estimated Fee : %d", tx.EstimatedFee())
-
 	fee := tx.Fee()
 	estimatedFee := tx.EstimatedFee()
-	if fee != estimatedFee && fee != estimatedFee+1 {
-		return fmt.Errorf("Wrong fee : got %d, want %d", tx.Fee(), tx.EstimatedFee())
+	t.Logf(tx.String(bitcoin.MainNet))
+	t.Logf("Size : %d", tx.MsgTx.SerializeSize())
+	t.Logf("Estimated Size : %d", tx.EstimatedSize())
+	t.Logf("Fee : %d", fee)
+	t.Logf("Estimated Fee : %d", estimatedFee)
+
+	_, changeInputFee, _ := OutputTotalCost(changeLockingScript, tx.FeeRate)
+	if fee < estimatedFee || fee > estimatedFee+changeInputFee {
+		return fmt.Errorf("Wrong fee : got %d, want %d", fee, estimatedFee)
 	}
 
 	return nil

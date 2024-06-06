@@ -44,7 +44,7 @@ func Test_BreakValue(t *testing.T) {
 		25000,
 		10000,
 		5000,
-		500,
+		547,
 	}
 	breakValue := uint64(10000)
 
@@ -126,7 +126,7 @@ func Test_BreakValueNoFee(t *testing.T) {
 		25000,
 		10000,
 		5000,
-		500,
+		547, // one over cost to spend
 	}
 	breakValue := uint64(10000)
 

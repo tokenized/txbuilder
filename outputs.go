@@ -73,6 +73,21 @@ func OutputFeeAndDustForAddress(ra bitcoin.RawAddress, dustFeeRate,
 	return f, d, nil
 }
 
+func OutputTotalCost(lockingScript bitcoin.Script, feeRate float32) (uint64, uint64, error) {
+	output := &wire.TxOut{
+		LockingScript: lockingScript,
+	}
+	outputSize := uint64(output.SerializeSize())
+
+	inputSize, err := InputSize(lockingScript)
+	if err != nil {
+		return EstimatedFeeValue(outputSize, float64(feeRate)), 0, errors.Wrapf(err, "input size")
+	}
+
+	return EstimatedFeeValue(outputSize, float64(feeRate)),
+		EstimatedFeeValue(uint64(inputSize), float64(feeRate)), nil
+}
+
 // OutputAddress returns the address that the output is paying to.
 func (tx *TxBuilder) OutputAddress(index int) (bitcoin.RawAddress, error) {
 	if index >= len(tx.MsgTx.TxOut) {
@@ -167,10 +182,11 @@ func (tx *TxBuilder) AddOutput(lockScript bitcoin.Script, value uint64,
 		LockingScript: lockScript,
 	}
 
-	dust := DustLimitForOutput(txout, tx.DustFeeRate)
+	outputFee, dust := OutputFeeAndDustForLockingScript(txout.LockingScript, tx.DustFeeRate,
+		tx.FeeRate)
 	if isDust {
 		txout.Value = dust
-	} else if value < dust && (!tx.SendMax || !isRemainder) &&
+	} else if value < outputFee && (!tx.SendMax || !isRemainder) &&
 		!bitcoin.LockingScriptIsUnspendable(lockScript) {
 		// Below dust and not send max output
 		return ErrBelowDustValue
@@ -195,10 +211,11 @@ func (tx *TxBuilder) InsertOutput(index int, lockScript bitcoin.Script, value ui
 		LockingScript: lockScript,
 	}
 
-	dust := DustLimitForOutput(txout, tx.DustFeeRate)
+	outputFee, dust := OutputFeeAndDustForLockingScript(txout.LockingScript, tx.DustFeeRate,
+		tx.FeeRate)
 	if isDust {
 		txout.Value = dust
-	} else if value < dust && (!tx.SendMax || !isRemainder) &&
+	} else if value < outputFee && (!tx.SendMax || !isRemainder) &&
 		!bitcoin.LockingScriptIsUnspendable(lockScript) {
 		// Below dust and not send max output
 		return ErrBelowDustValue

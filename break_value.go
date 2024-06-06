@@ -57,8 +57,7 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 			return nil, errors.Wrap(err, "locking script")
 		}
 
-		outputFee, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate,
-			feeRate)
+		outputFee, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
 		if subtractFee {
 			if remaining <= outputFee {
@@ -66,11 +65,11 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 			}
 			remaining -= outputFee
 
-			if remaining < dustLimit || remaining < breakValue {
+			if remaining <= inputFee || remaining < breakValue {
 				remaining += outputFee // abort adding this output, so add the fee for it back in
 				break                  // remaining amount is less than dust required to include next address
 			}
-		} else if remaining < dustLimit || remaining < breakValue {
+		} else if remaining <= inputFee || remaining < breakValue {
 			break // remaining amount is less than dust required to include next address
 		}
 
@@ -116,10 +115,9 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 	}
 
 	if subtractFee {
-		outputFee, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate,
-			feeRate)
+		outputFee, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
-		if remaining > outputFee+dustLimit {
+		if remaining > outputFee+inputFee {
 			remaining -= outputFee
 
 			result = append(result, &Output{
@@ -138,9 +136,9 @@ func BreakValue(value, breakValue uint64, addresses []AddressKeyID,
 			result[len(result)-1].TxOut.Value += remaining
 		}
 	} else {
-		_, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate, feeRate)
+		_, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
-		if remaining >= dustLimit {
+		if remaining >= inputFee {
 			result = append(result, &Output{
 				TxOut: wire.TxOut{
 					Value:         remaining,
@@ -192,8 +190,7 @@ func BreakValueLockingScripts(value, breakValue uint64, lockingScripts []bitcoin
 	result := make([]*Output, 0, len(lockingScripts))
 	nextIndex := 0
 	for _, lockingScript := range lockingScripts[:len(lockingScripts)-1] {
-		outputFee, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate,
-			feeRate)
+		outputFee, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
 		if subtractFee {
 			if remaining <= outputFee {
@@ -201,11 +198,11 @@ func BreakValueLockingScripts(value, breakValue uint64, lockingScripts []bitcoin
 			}
 			remaining -= outputFee
 
-			if remaining <= dustLimit || remaining < breakValue {
+			if remaining <= inputFee || remaining < breakValue {
 				remaining += outputFee // abort adding this output, so add the fee for it back in
 				break                  // remaining amount is less than dust required to include next address
 			}
-		} else if remaining <= dustLimit || remaining < breakValue {
+		} else if remaining <= inputFee || remaining < breakValue {
 			break // remaining amount is less than dust required to include next address
 		}
 
@@ -244,10 +241,9 @@ func BreakValueLockingScripts(value, breakValue uint64, lockingScripts []bitcoin
 	// Add any remainder to last output
 	lockingScript := lockingScripts[nextIndex]
 	if subtractFee {
-		outputFee, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate,
-			feeRate)
+		outputFee, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
-		if remaining > outputFee+dustLimit {
+		if remaining > outputFee+inputFee {
 			remaining -= outputFee
 
 			result = append(result, &Output{
@@ -265,9 +261,9 @@ func BreakValueLockingScripts(value, breakValue uint64, lockingScripts []bitcoin
 			result[len(result)-1].TxOut.Value += remaining
 		}
 	} else {
-		_, dustLimit := OutputFeeAndDustForLockingScript(lockingScript, dustFeeRate, feeRate)
+		_, inputFee, _ := OutputTotalCost(lockingScript, feeRate)
 
-		if remaining > dustLimit {
+		if remaining > inputFee {
 			result = append(result, &Output{
 				TxOut: wire.TxOut{
 					Value:         remaining,
