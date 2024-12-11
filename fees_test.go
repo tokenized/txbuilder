@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"
 )
@@ -440,5 +441,106 @@ func Test_P2PKH_EstimatedSize(t *testing.T) {
 	t.Logf("Estimated Size %d, actual size %d", estSize, 724)
 	if estSize < 724 || estSize > 750 {
 		t.Fatalf("Estimated size out of range : %d", estSize)
+	}
+}
+
+// Test_CalculateFee_LowRemainingBalance_NoChangeScript tests a scenario when there is a remaining
+// balance and no change script specified, but the remaining balance is too low to need a change
+// script.
+func Test_CalculateFee_LowRemainingBalance_NoChangeScript(t *testing.T) {
+	txb := NewTxBuilder(0.001, 0.0)
+
+	inputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	inputLockingScript, err := inputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddInput(wire.OutPoint{}, inputLockingScript, 1000)
+
+	outputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	outputLockingScript, err := outputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddOutput(outputLockingScript, 998, false, false)
+
+	if err := txb.CalculateFee(); err != nil {
+		t.Fatalf("No error should be thrown when the remainder change is 1 : %s", err)
+	}
+}
+
+func Test_CalculateFee_LowRemainingBalance_WithChangeScript(t *testing.T) {
+	txb := NewTxBuilder(0.001, 0.0)
+
+	changeKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	changeLockingScript, err := changeKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.SetChangeLockingScript(changeLockingScript, "")
+
+	inputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	inputLockingScript, err := inputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddInput(wire.OutPoint{}, inputLockingScript, 1000)
+
+	outputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	outputLockingScript, err := outputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddOutput(outputLockingScript, 998, false, false)
+
+	if err := txb.CalculateFee(); err != nil {
+		t.Fatalf("No error should be thrown when the remainder change is 1 : %s", err)
+	}
+}
+
+func Test_CalculateFee_EnoughRemainingBalance_NoChangeScript(t *testing.T) {
+	txb := NewTxBuilder(0.001, 0.0)
+
+	inputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	inputLockingScript, err := inputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddInput(wire.OutPoint{}, inputLockingScript, 1000)
+
+	outputKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate key : %s", err)
+	}
+	outputLockingScript, err := outputKey.LockingScript()
+	if err != nil {
+		t.Fatalf("Failed to create PKH locking script : %s", err)
+	}
+	txb.AddOutput(outputLockingScript, 990, false, false)
+
+	if err := txb.CalculateFee(); err == nil {
+		t.Fatalf("Error should be thrown when the remainder change is 9")
+	} else if errors.Cause(err) != ErrChangeAddressNeeded {
+		t.Fatalf("Wrong error : %s", err)
+	} else {
+		t.Logf("Correct error : %s", err)
 	}
 }

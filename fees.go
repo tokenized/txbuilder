@@ -345,16 +345,18 @@ func (tx *TxBuilder) AdjustFee(amount int64) (bool, error) {
 	} else {
 		// Decrease fee, transfer to change
 		if changeOutputIndex == 0xffffffff {
-			if len(tx.ChangeScript) == 0 {
-				return false, errors.Wrap(ErrChangeAddressNeeded, fmt.Sprintf("Remaining: %d",
-					uint64(-amount)))
-			}
-
 			// Adjust amount of fee adjustment for new output being added.
 			currentSize := uint64(tx.EstimatedSize())
 			currentFee := EstimatedFeeValue(currentSize, float64(tx.FeeRate))
 
-			newSize := currentSize + uint64(OutputSize(tx.ChangeScript))
+			var newSize uint64
+			if len(tx.ChangeScript) == 0 {
+				// Assume P2PKH for costs of adding an output so we don't fail out of this function
+				// with an error if the remaining amount is too small to worry about.
+				newSize = currentSize + P2PKHOutputSize
+			} else {
+				newSize = currentSize + uint64(OutputSize(tx.ChangeScript))
+			}
 			newFee := EstimatedFeeValue(newSize, float64(tx.FeeRate))
 
 			changeOutputFee := newFee - currentFee
@@ -367,11 +369,25 @@ func (tx *TxBuilder) AdjustFee(amount int64) (bool, error) {
 
 			// Add a change output if it would be more than the dust limit plus the fee to add the
 			// output
-			outputFee, inputFee, _ := OutputTotalCost(tx.ChangeScript, tx.FeeRate)
+			var outputFee, inputFee uint64
+			if len(tx.ChangeScript) == 0 {
+				// Assume P2PKH times two for costs of adding an output so we don't fail out of this
+				// function with an error if the remaining amount is too small to worry about.
+				outputFee = EstimatedFeeValue(P2PKHOutputSize*2, float64(tx.FeeRate))
+				inputFee = EstimatedFeeValue(uint64(MaximumP2PKHInputSize*2), float64(tx.FeeRate))
+			} else {
+				outputFee, inputFee, _ = OutputTotalCost(tx.ChangeScript, tx.FeeRate)
+			}
 			if adjustment > outputFee+inputFee {
+				if len(tx.ChangeScript) == 0 {
+					return false, errors.Wrap(ErrChangeAddressNeeded, fmt.Sprintf("Remaining: %d",
+						uint64(-amount)))
+				}
+
 				if err := tx.AddOutput(tx.ChangeScript, adjustment, true, false); err != nil {
 					return false, err
 				}
+
 				tx.Outputs[len(tx.Outputs)-1].KeyID = tx.ChangeKeyID
 				tx.Outputs[len(tx.Outputs)-1].addedForFee = true
 			} else {
